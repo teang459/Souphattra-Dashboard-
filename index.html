@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souphattra Hotel | Marketing Dashboard</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS Setup -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        gold: {
+                            50: '#FDFBFA',
+                            100: '#F9F4E8',
+                            200: '#F1E3C4',
+                            300: '#E7CFA0',
+                            400: '#DAB87A',
+                            500: '#C5A059', // Refined Premium Gold
+                            600: '#A48142',
+                            700: '#846430',
+                        },
+                        slate: {
+                            850: '#151e2e',
+                            900: '#0F172A',
+                            950: '#020617',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'glow': '0 0 20px rgba(197, 160, 89, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background-color: #F8FAFC;
+        }
+        .dark body {
+            background-color: #020617; /* Very dark slate */
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Glassmorphism utilities */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-header {
+            background: rgba(2, 6, 23, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Card Hover Effects */
+        .kpi-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.12);
+        }
+        .dark .kpi-card:hover {
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.4);
+        }
+
+        /* Print Styles */
+        @media print {
+            aside, header, .no-print { display: none !important; }
+            main { padding: 0 !important; margin: 0 !important; background: white !important; }
+            .shadow-soft { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        }
+
+        /* Transitions */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hide specific elements initially */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-200 transition-colors duration-300">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-[280px] bg-slate-900 text-white flex-shrink-0 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 fixed md:relative z-50 h-full border-r border-slate-800 shadow-2xl md:shadow-none">
+            <div class="h-20 flex items-center justify-between px-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-glow">
+                        <i class="fas fa-crown text-lg"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-white">Souphattra</span>
+                </div>
+                <button id="closeSidebarMobile" class="md:hidden text-slate-400 hover:text-white transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="px-6 py-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Marketing OS</p>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto px-4 space-y-1.5 custom-scrollbar pb-6">
+                <!-- Navigation Items generated here. Active class is added dynamically -->
+                <button data-target="dashboard" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 bg-gold-500/10 text-gold-500">
+                    <i class="fas fa-grid-2 w-5 text-center text-lg"></i> Dashboard
+                </button>
+                <button data-target="social" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-mobile-screen w-5 text-center text-lg"></i> Social Media
+                </button>
+                <button data-target="promotions" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-palette w-5 text-center text-lg"></i> Promo Artwork
+                </button>
+                <button data-target="website" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-laptop-code w-5 text-center text-lg"></i> Website Tasks
+                </button>
+                <button data-target="events" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-ticket-alt w-5 text-center text-lg"></i> Events
+                </button>
+                <button data-target="requests" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-inbox w-5 text-center text-lg"></i> Dept Requests
+                </button>
+                <button data-target="memos" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-file-signature w-5 text-center text-lg"></i> Internal Memo
+                </button>
+                <button data-target="calendar" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-calendar-day w-5 text-center text-lg"></i> Calendar
+                </button>
+                <button data-target="settings" class="nav-link w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-left text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 transition-all duration-200">
+                    <i class="fas fa-cog w-5 text-center text-lg"></i> Settings
+                </button>
+            </nav>
+            
+            <div class="p-4 border-t border-slate-800">
+                <div class="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl">
+                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=e2e8f0" alt="User" class="w-10 h-10 rounded-lg">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-white truncate">Marketing Admin</p>
+                        <p class="text-xs text-slate-400 truncate">admin@souphattra.com</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950">
+            <!-- Header -->
+            <header class="h-20 glass-header flex items-center justify-between px-6 lg:px-10 flex-shrink-0 z-40 sticky top-0">
+                <div class="flex items-center gap-4">
+                    <button id="openSidebar" class="md:hidden text-slate-500 hover:text-gold-500 transition-colors p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <div class="hidden sm:flex relative group">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-gold-500 transition-colors"></i>
+                        <input type="text" id="globalSearch" placeholder="Quick search..." class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full pl-11 pr-4 py-2.5 text-sm w-72 focus:ring-2 focus:ring-gold-500 focus:border-gold-500 dark:text-slate-200 shadow-sm transition-all focus:w-80 outline-none">
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <button onclick="exportData(document.querySelector('.page-section.active').id.replace('page-',''))" class="hidden md:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm">
+                        <i class="fas fa-cloud-download-alt"></i> Export
+                    </button>
+
+                    <button id="themeToggle" class="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-gold-500 rounded-full transition-all shadow-sm" title="Toggle Dark Mode">
+                        <i class="fas fa-moon text-lg"></i>
+                    </button>
+                    
+                    <div class="relative group">
+                        <button class="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-gold-500 rounded-full transition-all shadow-sm relative">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span id="notifBadge" class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full hidden border-2 border-white dark:border-slate-800"></span>
+                        </button>
+                        <div class="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 hidden group-hover:block z-50 overflow-hidden transform origin-top-right transition-all">
+                            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+                                <span class="font-semibold text-slate-800 dark:text-white">Notifications</span>
+                                <span class="text-xs bg-gold-100 text-gold-700 px-2 py-1 rounded-full font-medium">New</span>
+                            </div>
+                            <div id="notifList" class="max-h-80 overflow-y-auto text-sm p-2">
+                                <p class="p-4 text-slate-500 text-center">All caught up!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 relative">
+                
+                <!-- Page: Dashboard -->
+                <section id="page-dashboard" class="page-section active fade-in space-y-8">
+                    <div class="flex justify-between items-end mb-2">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Overview</h2>
+                            <p class="text-slate-500 dark:text-slate-400 mt-1">Here's what's happening across all marketing channels.</p>
+                        </div>
+                        <button class="no-print bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium transition shadow-lg shadow-gold-500/30 flex items-center gap-2" onclick="window.print()">
+                            <i class="fas fa-print"></i> Generate Report
+                        </button>
+                    </div>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+                        <div class="kpi-card bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition text-6xl text-slate-900 dark:text-white"><i class="fas fa-layer-group"></i></div>
+                            <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl flex items-center justify-center text-xl mb-4"><i class="fas fa-tasks"></i></div>
+                            <div class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Total Tasks</div>
+                            <div id="kpi-total" class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">0</div>
+                        </div>
+                        <div class="kpi-card bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition text-6xl text-green-500"><i class="fas fa-check-circle"></i></div>
+                            <div class="w-12 h-12 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center text-xl mb-4"><i class="fas fa-check"></i></div>
+                            <div class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Completed</div>
+                            <div id="kpi-completed" class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">0</div>
+                        </div>
+                        <div class="kpi-card bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div class="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center text-xl mb-4"><i class="fas fa-spinner fa-spin-pulse"></i></div>
+                            <div class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Pending Tasks</div>
+<div id="kpi-progress" class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">0</div>
+                        </div>
+                        <div class="kpi-card bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div class="w-12 h-12 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-2xl flex items-center justify-center text-xl mb-4"><i class="fas fa-eye"></i></div>
+                            <div class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Approval</div>
+                            <div id="kpi-approval" class="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">0</div>
+                        </div>
+                        <div class="kpi-card bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 relative overflow-hidden group">
+                            <div class="w-12 h-12 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center text-xl mb-4"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Overdue</div>
+                            <div id="kpi-overdue" class="text-4xl font-bold text-red-600 dark:text-red-400 tracking-tight">0</div>
+                        </div>
+                        <div class="kpi-card bg-gradient-to-br from-gold-500 to-gold-600 p-6 rounded-3xl shadow-glow relative overflow-hidden text-white group">
+                            <div class="absolute -right-4 -bottom-4 opacity-20 text-8xl"><i class="fas fa-calendar-day"></i></div>
+                            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-xl mb-4 backdrop-blur-sm"><i class="fas fa-bolt"></i></div>
+                            <div class="text-white/80 text-sm font-medium mb-1">Due Today</div>
+                            <div id="kpi-today" class="text-4xl font-bold tracking-tight">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                        <div class="bg-white dark:bg-slate-900 p-6 lg:p-8 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Task Distribution</h3>
+                                <button class="text-slate-400 hover:text-gold-500"><i class="fas fa-ellipsis-h"></i></button>
+                            </div>
+                            <div class="relative h-64 w-full flex justify-center">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-slate-900 p-6 lg:p-8 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Monthly Progress</h3>
+                            </div>
+                            <div class="relative h-64 w-full">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-slate-900 p-6 lg:p-8 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800">
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Social Media Output</h3>
+                                    <p class="text-xs text-slate-500 mt-1">Target: 6 posts/month per Restaurant/Outlet/Hotel</p>
+                                </div>
+                            </div>
+                            <div class="relative h-56 w-full">
+                                <canvas id="socialChart"></canvas>
+                            </div>
+                            <div id="socialAlerts" class="mt-6 space-y-2"></div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-900 p-6 lg:p-8 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800">
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6">Promo Workload</h3>
+                            <div class="relative h-56 w-full">
+                                <canvas id="promoChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Social Page -->
+                <section id="page-social" class="page-section fade-in space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Social Media</h2>
+                            <p class="text-slate-500 dark:text-slate-400 mt-1">Manage content calendar and cross-platform publishing.</p>
+                        </div>
+                        <button onclick="openModal('social')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg shadow-gold-500/30 flex items-center gap-2 transition">
+                            <i class="fas fa-plus"></i> New Post
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                    <tr>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 cursor-pointer" onclick="sortTable('social', 'outlet')">Restaurant/Outlet/Hotel <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Platform/Type</th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 cursor-pointer" onclick="sortTable('social', 'title')">Campaign & Title <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 cursor-pointer" onclick="sortTable('social', 'dueDate')">Due Date <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 cursor-pointer" onclick="sortTable('social', 'status')">Status <i class="fas fa-sort ml-1 opacity-50"></i></th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Assigned</th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-social" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Promos Page -->
+                <section id="page-promotions" class="page-section fade-in space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Promo Artwork</h2>
+                            <p class="text-slate-500 dark:text-slate-400 mt-1">Design deliverables for offers and F&B.</p>
+                        </div>
+                        <button onclick="openModal('promotions')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg shadow-gold-500/30 flex items-center gap-2 transition">
+                            <i class="fas fa-plus"></i> Request Art
+                        </button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <tr>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Promotion</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Restaurant/Outlet/Hotel</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Deliverable</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500" onclick="sortTable('promotions', 'dueDate')">Due Date</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Priority</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Designer</th>
+                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-promotions" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Website Page -->
+                <section id="page-website" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Website Tasks</h2>
+                        <button onclick="openModal('website')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"><i class="fas fa-plus"></i> New Update</button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <tr><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Task</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Page</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Due Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assigned</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="table-website" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Events Page -->
+                <section id="page-events" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Event Projects</h2>
+                        <button onclick="openModal('events')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"><i class="fas fa-plus"></i> New Event</button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <tr><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Event Name</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Deliverables</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Due Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assigned To</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="table-events" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Requests Page -->
+                <section id="page-requests" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Marketing Requests</h2>
+                        <button onclick="openModal('requests')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"><i class="fas fa-plus"></i> New Request</button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <tr><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Dept</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Request</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Due Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Priority</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assigned To</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="table-requests" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Memos Page -->
+                <section id="page-memos" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Internal Memos</h2>
+                        <button onclick="openModal('memos')" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-lg flex items-center gap-2"><i class="fas fa-plus"></i> Create Memo</button>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 overflow-hidden overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <tr><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Memo No.</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Department</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Subject</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Due Date</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Assigned</th><th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="table-memos" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Calendar Page -->
+                <section id="page-calendar" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Task Calendar</h2>
+                        <div class="flex gap-4 text-xs font-medium bg-white dark:bg-slate-900 px-4 py-2 rounded-full shadow-sm border border-slate-100 dark:border-slate-800">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm"></span> Social</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm"></span> Promo</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></span> Web</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-sm"></span> Event</span>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 p-6 lg:p-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <button onclick="changeMonth(-1)" class="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition text-slate-600 dark:text-slate-300"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="calMonthYear" class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">July 2026</h3>
+                            <button onclick="changeMonth(1)" class="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition text-slate-600 dark:text-slate-300"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                            <div class="grid grid-cols-7 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Sun</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Mon</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Tue</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Wed</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Thu</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Fri</div>
+                                <div class="py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Sat</div>
+                            </div>
+                            <div id="calendarGrid" class="grid grid-cols-7 bg-white dark:bg-slate-900 text-sm">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Page -->
+                <section id="page-settings" class="page-section fade-in space-y-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h2>
+                            <p class="text-slate-500 dark:text-slate-400 mt-1">Manage system configurations and options.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-soft border border-slate-100 dark:border-slate-800 p-6 lg:p-8 max-w-2xl">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Manage Restaurants/Outlets/Hotels</h3>
+                        
+                        <div class="flex gap-3 mb-6">
+                            <input type="text" id="newOutletInput" onkeypress="if(event.key === 'Enter') addOutlet()" placeholder="New name..." class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none text-slate-800 dark:text-slate-200">
+                            <button type="button" onclick="addOutlet()" class="bg-gold-500 hover:bg-gold-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition shadow-sm whitespace-nowrap">
+                                <i class="fas fa-plus mr-1"></i> Add
+                            </button>
+                        </div>
+
+                        <div class="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                    <tr>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Name</th>
+                                        <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-outlets" class="divide-y divide-slate-50 dark:divide-slate-800/50 bg-white dark:bg-slate-900">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="globalModal" class="fixed inset-0 z-[100] hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        
+        <div class="absolute inset-0 overflow-y-auto flex items-center justify-center p-4 sm:p-6">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl flex flex-col fade-in border border-slate-100 dark:border-slate-800 relative z-10 transform scale-100">
+                <div class="p-6 lg:p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h3 id="modalTitle" class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Add Task</h3>
+                    <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 rounded-full transition"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <div class="p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 max-h-[70vh]">
+                    <form id="crudForm" class="space-y-5">
+                        <input type="hidden" id="formType">
+                        <input type="hidden" id="formId">
+                        <div id="dynamicFormFields" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <!-- Fields injected via JS -->
+                        </div>
+                        
+                        <div class="border-t border-slate-100 dark:border-slate-800 pt-5 mt-5">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Attachments</label>
+                            <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gold-400 mb-3"></i>
+                                <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">Click to upload or drag and drop</p>
+                                <p class="text-xs text-slate-400 mt-1">SVG, PNG, JPG or PDF (max. 10MB)</p>
+                                <input type="file" class="hidden">
+                            </div>
+                        </div>
+                        
+                        <div id="commentsSection" class="hidden border-t border-slate-100 dark:border-slate-800 pt-5 mt-5">
+                            <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Comments & Updates</h4>
+                            <div class="space-y-3 mb-4">
+                                <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl text-sm text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700/50">
+                                    <span class="font-bold text-slate-800 dark:text-white mr-2">Admin:</span> Please ensure the brand guidelines are strictly followed for the new logo placement.
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <input type="text" placeholder="Type a comment..." class="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none">
+                                <button type="button" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-5 py-2.5 rounded-xl text-sm font-medium transition">Post</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="p-6 lg:p-8 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-b-3xl">
+                    <button onclick="closeModal()" class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition">Cancel</button>
+                    <button onclick="saveItem()" class="px-6 py-2.5 bg-gold-500 hover:bg-gold-600 text-white rounded-full text-sm font-medium shadow-lg shadow-gold-500/30 transition">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. STATE & DATA INITIALIZATION
+        const DEFAULT_DATA = {
+            social: [
+                { id: 1, outlet: 'Souphattra Dining Room', platform: 'Facebook', campaign: 'Summer Stay', title: 'Poolside Relax', type: 'Image', dueDate: '2026-07-20', status: 'Scheduled', assigned: 'Anna' },
+                { id: 2, outlet: 'Lao Derm Restaurant', platform: 'Instagram', campaign: 'New Menu', title: 'Chef Special', type: 'Reel', dueDate: '2026-07-16', status: 'Designing', assigned: 'Mike' },
+                { id: 3, outlet: 'Marsilea Spa', platform: 'TikTok', campaign: 'Wellness', title: 'Massage Promo', type: 'Video', dueDate: '2026-07-25', status: 'To Do', assigned: 'Sarah' }
+            ],
+            promotions: [
+                { id: 1, promotion: 'Q3 Early Bird', outlet: 'Souphattra Dining Room', deliverable: 'Facebook Art', dueDate: '2026-07-22', priority: 'High', status: 'In Progress', assigned: 'Mike' },
+                { id: 2, promotion: 'Wine Pairing', outlet: 'Lao Derm Restaurant', deliverable: 'Menu Design', dueDate: '2026-07-15', priority: 'Urgent', status: 'Waiting Approval', assigned: 'Anna' }
+            ],
+            website: [
+                { id: 1, task: 'Add Summer Promo', page: '/offers', dueDate: '2026-07-18', status: 'To Do', assigned: 'Web Team' },
+                { id: 2, task: 'Update Spa PDF', page: '/spa', dueDate: '2026-07-10', status: 'Completed', assigned: 'Web Team' }
+            ],
+            events: [
+                { id: 1, event: 'Tourism Expo', deliverable: 'Booth Backdrop', dueDate: '2026-08-10', status: 'Designing', assigned: 'Mike' }
+            ],
+            requests: [
+                { id: 1, dept: 'Front Office', request: 'Welcome Letter Update', date: '2026-07-14', dueDate: '2026-07-17', priority: 'Medium', status: 'To Do', assigned: 'Anna' }
+            ],
+            memos: [
+                { id: 1, memoNo: 'MEMO-001', dept: 'HR', subject: 'Staff Party', date: '2026-07-01', dueDate: '2026-07-20', status: 'In Progress', assigned: 'Sarah' }
+            ],
+            outlets: ['Cafe Lao Derm', 'Lao Derm Restaurant', 'Wan Xiang', 'ISSHIN', 'Souphattra Dining Room', 'Marsilea Spa', 'Selene Sky Bar', 'Function'],
+            theme: 'light'
+        };
+
+        let appState = JSON.parse(localStorage.getItem('souphattraState')) || DEFAULT_DATA;
+        if (!appState.outlets) appState.outlets = [...DEFAULT_DATA.outlets];
+
+        let chartInstances = {};
+        let currentSort = { type: '', column: '', asc: true };
+        // Automatically uses the local system time and timezone 
+let currentDate = new Date(); // Fixed context date
+
+        const OPTIONS = {
+            platforms: ['Facebook', 'Instagram', 'TikTok', 'LinkedIn'],
+            socialStatus: ['To Do', 'Designing', 'Waiting Approval', 'Scheduled', 'Published'],
+            promoStatus: ['To Do', 'Designing', 'Waiting Approval', 'Completed'],
+            priorities: ['Low', 'Medium', 'High', 'Urgent'],
+            depts: ['Restaurant', 'Spa', 'Sales', 'HR', 'Front Office', 'Housekeeping']
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(appState.theme);
+            setupNavigation();
+            renderAll();
+            setupSearch();
+            
+            // Sidebar toggles
+            document.getElementById('openSidebar').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('-translate-x-full');
+            });
+            document.getElementById('closeSidebarMobile').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            });
+            
+            // Theme toggle
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                appState.theme = appState.theme === 'light' ? 'dark' : 'light';
+                saveState();
+                applyTheme(appState.theme);
+                renderCharts(); // Redraw for colors
+            });
+            
+            // Add resize listener for charts
+            window.addEventListener('resize', () => {
+                if(document.getElementById('page-dashboard').classList.contains('active')) {
+                    renderCharts();
+                }
+            });
+        });
+
+        function applyTheme(theme) {
+            if (theme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+
+        function saveState() {
+            localStorage.setItem('souphattraState', JSON.stringify(appState));
+        }
+
+        function setupNavigation() {
+            const links = document.querySelectorAll('.nav-link');
+            links.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    links.forEach(l => {
+                        l.classList.remove('bg-gold-500/10', 'text-gold-500');
+                        l.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-slate-200');
+                    });
+                    const target = e.currentTarget;
+                    target.classList.add('bg-gold-500/10', 'text-gold-500');
+                    target.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-slate-200');
+                    
+                    const targetId = target.dataset.target;
+                    document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+                    document.getElementById(`page-${targetId}`).classList.add('active');
+                    
+                    if (targetId === 'dashboard') setTimeout(renderCharts, 50); // slight delay to ensure DOM is ready
+                    if (targetId === 'calendar') renderCalendar();
+                    
+                    if (window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
+                });
+            });
+        }
+
+        function renderAll() {
+            renderDashboardCards();
+            if(document.getElementById('page-dashboard').classList.contains('active')) renderCharts();
+            ['social', 'promotions', 'website', 'events', 'requests', 'memos'].forEach(renderTable);
+            renderSettings();
+            checkNotifications();
+        }
+
+        const getBadgeColor = (text) => {
+            const colors = {
+                'To Do': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                'Designing': 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400',
+                'Waiting Approval': 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+                'Scheduled': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
+                'Published': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+                'Completed': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+                'In Progress': 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400',
+                'Urgent': 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+                'High': 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
+                'Medium': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400',
+                'Low': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+            };
+            return colors[text] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+        };
+
+        const badge = (text) => `<span class="px-3 py-1 rounded-full text-xs font-semibold ${getBadgeColor(text)} tracking-wide">${text}</span>`;
+        
+        const actionButtons = (type, id) => `
+            <div class="flex items-center justify-end gap-2">
+                <button onclick="editItem('${type}', ${id})" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition flex items-center justify-center"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteItem('${type}', ${id})" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition flex items-center justify-center"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+
+        function renderTable(type) {
+            const tbody = document.getElementById(`table-${type}`);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            let data = appState[type];
+            if (currentSort.type === type) {
+                data.sort((a, b) => {
+                    let valA = (a[currentSort.column] || '').toString().toLowerCase();
+                    let valB = (b[currentSort.column] || '').toString().toLowerCase();
+                    if(valA < valB) return currentSort.asc ? -1 : 1;
+                    if(valA > valB) return currentSort.asc ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            data.forEach(item => {
+                let tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors text-slate-700 dark:text-slate-300 group';
+                
+                let isOverdue = item.dueDate && new Date(item.dueDate) < currentDate && !item.status.includes('Completed') && !item.status.includes('Published');
+                
+                let html = '';
+                if (type === 'social') {
+                    const iconMap = { 'Facebook':'fa-facebook text-blue-600', 'Instagram':'fa-instagram text-pink-600', 'TikTok':'fa-tiktok text-slate-900 dark:text-white', 'LinkedIn':'fa-linkedin text-blue-700' };
+                    let iClass = iconMap[item.platform] || 'fa-hashtag text-slate-400';
+                    html = `
+                        <td class="px-6 py-5 font-medium">${item.outlet}</td>
+                        <td class="px-6 py-5"><div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 w-fit px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700"><i class="fab ${iClass} text-lg"></i> <span class="text-xs font-medium">${item.type}</span></div></td>
+                        <td class="px-6 py-5"><div><p class="font-bold text-slate-900 dark:text-white text-base">${item.title}</p><p class="text-xs text-slate-500 font-medium">${item.campaign}</p></div></td>
+                        <td class="px-6 py-5 ${isOverdue ? 'text-red-500 font-bold' : 'font-medium'}">${item.dueDate}</td>
+                        <td class="px-6 py-5">${badge(item.status)}</td>
+                        <td class="px-6 py-5 font-medium flex items-center gap-2 mt-2"><div class="w-6 h-6 rounded-full bg-gold-100 text-gold-700 flex items-center justify-center text-xs font-bold">${item.assigned.charAt(0)}</div> ${item.assigned}</td>
+                    `;
+                } else if (type === 'promotions') {
+                    html = `
+                        <td class="px-6 py-5 font-bold text-slate-900 dark:text-white text-base">${item.promotion}</td>
+                        <td class="px-6 py-5 font-medium">${item.outlet}</td>
+                        <td class="px-6 py-5"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs font-medium">${item.deliverable}</span></td>
+                        <td class="px-6 py-5 ${isOverdue ? 'text-red-500 font-bold' : 'font-medium'}">${item.dueDate}</td>
+                        <td class="px-6 py-5">${badge(item.priority)}</td>
+                        <td class="px-6 py-5">${badge(item.status)}</td>
+                        <td class="px-6 py-5 font-medium">${item.assigned}</td>
+                    `;
+                } else if (type === 'website') {
+                    html = `
+                        <td class="px-6 py-5 font-bold text-slate-900 dark:text-white">${item.task}</td><td class="px-6 py-5 text-xs font-mono text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded inline-block mt-4">${item.page}</td>
+                        <td class="px-6 py-5 ${isOverdue ? 'text-red-500 font-bold' : 'font-medium'}">${item.dueDate}</td><td class="px-6 py-5">${badge(item.status)}</td><td class="px-6 py-5 font-medium">${item.assigned}</td>
+                    `;
+                } else if (type === 'events') {
+                    html = `
+                        <td class="px-6 py-5 font-bold text-slate-900 dark:text-white">${item.event}</td><td class="px-6 py-5 text-sm">${item.deliverables}</td>
+                        <td class="px-6 py-5 ${isOverdue ? 'text-red-500 font-bold' : 'font-medium'}">${item.dueDate}</td><td class="px-6 py-5">${badge(item.status)}</td><td class="px-6 py-5 font-medium">${item.assigned}</td>
+                    `;
+                } else if (type === 'requests') {
+                    html = `
+                        <td class="px-6 py-5 font-bold text-slate-900 dark:text-white">${item.dept}</td><td class="px-6 py-5 truncate max-w-[200px]" title="${item.request}">${item.request}</td>
+                        <td class="px-6 py-5 text-xs font-medium text-slate-500">${item.date}</td><td class="px-6 py-5 ${isOverdue ? 'text-red-500 font-bold' : 'font-medium'}">${item.dueDate}</td>
+                        <td class="px-6 py-5">${badge(item.priority)}</td><td class="px-6 py-5">${badge(item.status)}</td><td class="px-6 py-5 font-medium">${item.assigned}</td>
+                    `;
+                } else if (type === 'memos') {
+                    html = `
+                        <td class="px-6 py-5 font-mono text-xs font-bold text-slate-500">${item.memoNo}</td><td class="px-6 py-5 font-medium">${item.dept}</td>
+                        <td class="px-6 py-5 font-bold text-slate-900 dark:text-white">${item.subject}</td><td class="px-6 py-5 text-xs font-medium text-slate-500">${item.date}</td>
+                        <td class="px-6 py-5 font-medium">${item.dueDate}</td><td class="px-6 py-5">${badge(item.status)}</td><td class="px-6 py-5 font-medium">${item.assigned}</td>
+                    `;
+                }
+                
+                html += `<td class="px-6 py-5 border-l border-transparent group-hover:border-slate-100 dark:group-hover:border-slate-800 transition-colors">${actionButtons(type, item.id)}</td>`;
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(type, column) {
+            if(currentSort.type === type && currentSort.column === column) {
+                currentSort.asc = !currentSort.asc;
+            } else {
+                currentSort = { type, column, asc: true };
+            }
+            renderTable(type);
+        }
+
+        function renderDashboardCards() {
+    let total = 0, completed = 0, inProgress = 0, approval = 0, overdue = 0;
+    
+    // Fix: Adjust the ISO string to account for your local timezone offset
+    const offset = currentDate.getTimezoneOffset() * 60000;
+    const localISODate = (new Date(currentDate - offset)).toISOString().split('T')[0];
+    let todayStr = localISODate; 
+    let todayCount = 0;
+    
+    Object.keys(appState).forEach(key => {
+        if (Array.isArray(appState[key])) {
+            appState[key].forEach(item => {
+                total++;
+                let stat = item.status || '';
+                
+                // 1. Identify if the task is completely finished
+                let isDone = stat.includes('Completed') || stat.includes('Published') || stat.includes('Circulated');
+                
+                if (isDone) {
+                    completed++;
+                } else {
+                    // 2. If it is NOT done, it counts as a Pending Task
+                    inProgress++;
+                }
+                
+                // 3. Keep tracking approvals separately
+                if (stat.includes('Approval')) approval++;
+                
+                // 4. Overdue and Due Today calculations using the corrected local date
+                if (item.dueDate && item.dueDate < todayStr && !isDone) overdue++;
+                if (item.dueDate === todayStr) todayCount++;
+            });
+        }
+    });
+
+    document.getElementById('kpi-total').innerText = total;
+    document.getElementById('kpi-completed').innerText = completed;
+    document.getElementById('kpi-progress').innerText = inProgress; // Now displays total pending
+    document.getElementById('kpi-approval').innerText = approval;
+    document.getElementById('kpi-overdue').innerText = overdue;
+    document.getElementById('kpi-today').innerText = todayCount;
+}
+
+        function renderCharts() {
+            const isDark = appState.theme === 'dark';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(148, 163, 184, 0.05)' : 'rgba(100, 116, 139, 0.08)';
+            const tooltipBg = isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+            const tooltipColor = isDark ? '#f8fafc' : '#0f172a';
+            
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = textColor;
+
+            const commonOptions = {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { usePointStyle: true, boxWidth: 8, font: { weight: 500 } } },
+                    tooltip: { backgroundColor: tooltipBg, titleColor: tooltipColor, bodyColor: tooltipColor, borderColor: gridColor, borderWidth: 1, padding: 12, cornerRadius: 12, titleFont: { size: 14, weight: 700 }, bodyFont: { size: 13, weight: 500 } }
+                },
+                scales: { 
+                    x: { ticks: { color: textColor, font: { weight: 500 } }, grid: { display: false } },
+                    y: { ticks: { color: textColor, font: { weight: 500 } }, grid: { color: gridColor, drawBorder: false, borderDash: [4, 4] }, border: { display: false } }
+                }
+            };
+
+            // 1. Categories (Doughnut)
+            if(chartInstances.cat) chartInstances.cat.destroy();
+            chartInstances.cat = new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Social', 'Promos', 'Website', 'Events', 'Requests'],
+                    datasets: [{
+                        data: [appState.social.length, appState.promotions.length, appState.website.length, appState.events.length, appState.requests.length],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } } } 
+                }
+            });
+
+            // 2. Social Media Health (Bar with gradient)
+            const outletCounts = appState.outlets.map(o => appState.social.filter(s => s.outlet === o && new Date(s.dueDate).getMonth() === currentDate.getMonth()).length);
+            const shortOutletLabels = appState.outlets.map(o => o.length > 12 ? o.substring(0, 10) + '..' : o);
+            
+            if(chartInstances.soc) chartInstances.soc.destroy();
+            const ctxSoc = document.getElementById('socialChart').getContext('2d');
+            const gradientGold = ctxSoc.createLinearGradient(0, 0, 0, 400);
+            gradientGold.addColorStop(0, '#C5A059');
+            gradientGold.addColorStop(1, '#A48142');
+
+            chartInstances.soc = new Chart(ctxSoc, {
+                type: 'bar',
+                data: {
+                    labels: shortOutletLabels,
+                    datasets: [{ label: 'Posts', data: outletCounts, backgroundColor: gradientGold, borderRadius: 6, borderSkipped: false, barThickness: 24 }]
+                },
+                options: {
+                    ...commonOptions,
+                    plugins: { 
+                        ...commonOptions.plugins,
+                        legend: { display: false },
+                        annotation: { annotations: { line1: { type: 'line', yMin: 6, yMax: 6, borderColor: '#ef4444', borderWidth: 2, borderDash: [4, 4] } } } 
+                    },
+                    scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, max: Math.max(10, Math.max(...outletCounts) + 2) } }
+                }
+            });
+
+            // Alerts UI for Social
+            let alertsHtml = '';
+            appState.outlets.forEach((o, i) => {
+                if (outletCounts[i] < 6) alertsHtml += `<div class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 px-4 py-2.5 rounded-xl flex items-center gap-3"><i class="fas fa-exclamation-circle text-lg"></i> <span class="font-medium">${o}</span> needs ${6 - outletCounts[i]} more posts.</div>`;
+            });
+            document.getElementById('socialAlerts').innerHTML = alertsHtml || `<div class="text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-4 py-2.5 rounded-xl flex items-center gap-3"><i class="fas fa-check-circle text-lg"></i> <span class="font-medium">All locations meet targets!</span></div>`;
+
+            // 3. Monthly Progress (Line with fill)
+            if(chartInstances.prog) chartInstances.prog.destroy();
+            const ctxProg = document.getElementById('progressChart').getContext('2d');
+            const gradientGreen = ctxProg.createLinearGradient(0, 0, 0, 300);
+            gradientGreen.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+            gradientGreen.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+            chartInstances.prog = new Chart(ctxProg, {
+                type: 'line',
+                data: {
+                    labels: ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                    datasets: [
+                        { label: 'Completed', data: [12, 19, 15, 25, 22, 10], borderColor: '#10b981', backgroundColor: gradientGreen, fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#10b981', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6 },
+                        { label: 'Added', data: [15, 22, 20, 28, 20, 15], borderColor: '#94a3b8', borderDash: [5,5], tension: 0.4, borderWidth: 2, pointRadius: 0 }
+                    ]
+                },
+                options: commonOptions
+            });
+
+            // 4. Promo Workload (Horizontal Bar)
+            if(chartInstances.promo) chartInstances.promo.destroy();
+            const promoData = [appState.promotions.filter(p=>p.status==='To Do').length, appState.promotions.filter(p=>p.status==='Designing').length, appState.promotions.filter(p=>p.status==='Waiting Approval').length];
+            
+            chartInstances.promo = new Chart(document.getElementById('promoChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['To Do', 'Designing', 'Review'],
+                    datasets: [{ label: 'Promos', data: promoData, backgroundColor: ['#cbd5e1', '#818cf8', '#fbbf24'], borderRadius: 6 }]
+                },
+                options: { ...commonOptions, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor, drawBorder: false, borderDash:[4,4] } }, y: { grid: { display: false } } } }
+            });
+        }
+
+        function checkNotifications() {
+            let notifs = [];
+            let todayStr = currentDate.toISOString().split('T')[0];
+            Object.keys(appState).forEach(key => {
+                if(Array.isArray(appState[key])) {
+                    appState[key].forEach(item => {
+                        if (item.dueDate && item.dueDate < todayStr && !item.status.includes('Completed') && !item.status.includes('Published')) {
+                            notifs.push(`Overdue: <span class="font-bold text-slate-800 dark:text-white">${item.title || item.promotion || item.task || item.event || item.request}</span>`);
+                        }
+                    });
+                }
+            });
+
+            const badge = document.getElementById('notifBadge');
+            const list = document.getElementById('notifList');
+            if (notifs.length > 0) {
+                badge.classList.remove('hidden');
+                list.innerHTML = notifs.map(n => `<div class="p-3 border-b border-slate-100 dark:border-slate-800 text-red-500 dark:text-red-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition rounded-lg m-1"><i class="fas fa-circle text-[8px] mr-2 mb-0.5"></i> ${n}</div>`).join('');
+            } else {
+                badge.classList.add('hidden');
+                list.innerHTML = '<p class="p-4 text-slate-500 text-center font-medium">All caught up!</p>';
+            }
+        }
+
+        const SCHEMAS = {
+            social: [
+                { id: 'outlet', label: 'Restaurant/Outlet/Hotel', type: 'select', options: [] },
+                { id: 'platform', label: 'Platform', type: 'select', options: OPTIONS.platforms },
+                { id: 'campaign', label: 'Campaign', type: 'text' },
+                { id: 'title', label: 'Post Title', type: 'text', required: true },
+                { id: 'type', label: 'Format', type: 'select', options: ['Image', 'Video', 'Reel', 'Carousel', 'Text'] },
+                { id: 'dueDate', label: 'Due Date', type: 'date', required: true },
+                { id: 'status', label: 'Status', type: 'select', options: OPTIONS.socialStatus },
+                { id: 'assigned', label: 'Assignee', type: 'text' }
+            ],
+            promotions: [
+                { id: 'promotion', label: 'Promotion Name', type: 'text', required: true },
+                { id: 'outlet', label: 'Restaurant/Outlet/Hotel', type: 'select', options: [] },
+                { id: 'deliverable', label: 'Format (e.g. Flyer)', type: 'text' },
+                { id: 'dueDate', label: 'Due Date', type: 'date', required: true },
+                { id: 'priority', label: 'Priority', type: 'select', options: OPTIONS.priorities },
+                { id: 'status', label: 'Status', type: 'select', options: OPTIONS.promoStatus },
+                { id: 'assigned', label: 'Designer', type: 'text' }
+            ],
+            website: [
+                { id: 'task', label: 'Task Detail', type: 'text', required: true },
+                { id: 'page', label: 'URL Path', type: 'text' },
+                { id: 'dueDate', label: 'Due Date', type: 'date', required: true },
+                { id: 'status', label: 'Status', type: 'select', options: OPTIONS.promoStatus },
+                { id: 'assigned', label: 'Assignee', type: 'text' }
+            ],
+            events: [
+                { id: 'event', label: 'Event Name', type: 'text', required: true },
+                { id: 'deliverables', label: 'Deliverables', type: 'text' },
+                { id: 'dueDate', label: 'Due Date', type: 'date', required: true },
+                { id: 'status', label: 'Status', type: 'select', options: ['Planning', 'Designing', 'Ready', 'Completed'] },
+                { id: 'assigned', label: 'Assignee', type: 'text' }
+            ],
+            requests: [
+                { id: 'dept', label: 'Department', type: 'select', options: OPTIONS.depts },
+                { id: 'request', label: 'Request Details', type: 'text', required: true },
+                { id: 'date', label: 'Req Date', type: 'date' },
+                { id: 'dueDate', label: 'Due Date', type: 'date', required: true },
+                { id: 'priority', label: 'Priority', type: 'select', options: OPTIONS.priorities },
+                { id: 'status', label: 'Status', type: 'select', options: ['To Do', 'In Progress', 'Completed'] },
+                { id: 'assigned', label: 'Assignee', type: 'text' }
+            ],
+            memos: [
+                { id: 'memoNo', label: 'Memo No.', type: 'text' },
+                { id: 'dept', label: 'Department', type: 'select', options: OPTIONS.depts },
+                { id: 'subject', label: 'Subject', type: 'text', required: true },
+                { id: 'date', label: 'Issue Date', type: 'date' },
+                { id: 'dueDate', label: 'Due Date', type: 'date' },
+                { id: 'status', label: 'Status', type: 'select', options: ['Draft', 'In Progress', 'Circulated'] },
+                { id: 'assigned', label: 'Owner', type: 'text' }
+            ]
+        };
+
+        function openModal(type, id = null) {
+            const modal = document.getElementById('globalModal');
+            modal.classList.remove('hidden');
+            
+            // Allow small delay for flex render before adding animation class for scaling
+            setTimeout(() => { modal.querySelector('.transform').classList.add('scale-100'); }, 10);
+            
+            document.getElementById('formType').value = type;
+            document.getElementById('formId').value = id || '';
+            document.getElementById('modalTitle').innerText = id ? 'Edit Details' : `New ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            
+            const container = document.getElementById('dynamicFormFields');
+            container.innerHTML = '';
+            
+            let existingData = id ? appState[type].find(i => i.id === id) : null;
+            document.getElementById('commentsSection').style.display = id ? 'block' : 'none';
+
+            SCHEMAS[type].forEach(field => {
+                let val = existingData ? existingData[field.id] : '';
+                let html = `<div class="flex flex-col"><label class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">${field.label} ${field.required?'<span class="text-red-500">*</span>':''}</label>`;
+                
+                let commonClasses = "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-gold-500 focus:border-gold-500 transition outline-none shadow-sm";
+                
+                if (field.type === 'select') {
+                    let selectOptions = field.id === 'outlet' ? appState.outlets : field.options;
+                    html += `<select id="field_${field.id}" class="${commonClasses}" ${field.required?'required':''}>`;
+                    selectOptions.forEach(opt => html += `<option value="${opt}" ${val===opt?'selected':''}>${opt}</option>`);
+                    html += `</select>`;
+                } else {
+                    html += `<input type="${field.type}" id="field_${field.id}" value="${val}" class="${commonClasses}" ${field.required?'required':''}>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('globalModal').classList.add('hidden');
+        }
+
+        function saveItem() {
+            const type = document.getElementById('formType').value;
+            const id = document.getElementById('formId').value;
+            let newItem = { id: id ? parseInt(id) : Date.now() };
+            
+            let isValid = true;
+            SCHEMAS[type].forEach(field => {
+                const el = document.getElementById(`field_${field.id}`);
+                if (field.required && !el.value) { isValid = false; el.classList.add('border-red-500', 'ring-1', 'ring-red-500'); }
+                else { el.classList.remove('border-red-500', 'ring-1', 'ring-red-500'); }
+                newItem[field.id] = el.value;
+            });
+
+            if (!isValid) return; // Silent return, visually indicated by red border
+
+            if (id) {
+                const index = appState[type].findIndex(i => i.id === parseInt(id));
+                appState[type][index] = newItem;
+            } else {
+                appState[type].push(newItem);
+            }
+            
+            saveState();
+            renderAll();
+            closeModal();
+            if(document.getElementById('page-calendar').classList.contains('active')) renderCalendar(); 
+        }
+
+        function editItem(type, id) { openModal(type, id); }
+        function deleteItem(type, id) {
+            if(confirm("Permanently delete this task?")) {
+                appState[type] = appState[type].filter(i => i.id !== id);
+                saveState();
+                renderAll();
+                if(document.getElementById('page-calendar').classList.contains('active')) renderCalendar();
+            }
+        }
+
+        function setupSearch() {
+            document.getElementById('globalSearch').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                if(term.length < 2 && term.length > 0) return;
+                Object.keys(appState).forEach(key => {
+                    if (Array.isArray(appState[key])) {
+                        const trs = document.querySelectorAll(`#table-${key} tr`);
+                        trs.forEach(tr => { tr.style.display = tr.innerText.toLowerCase().includes(term) ? '' : 'none'; });
+                    }
+                });
+            });
+        }
+
+        function exportData(type) {
+            if(type === 'dashboard' || type === 'calendar') return alert("Please navigate to a specific table page (e.g., Social Media) to export data.");
+            const data = appState[type];
+            if(!data || !data.length) return alert("No data to export.");
+            
+            const schema = SCHEMAS[type];
+            let csv = schema.map(s => s.label).join(',') + '\n';
+            data.forEach(item => {
+                csv += schema.map(s => `"${(item[s.id] || '').toString().replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Souphattra_${type}_Export.csv`);
+            a.click();
+        }
+
+        function renderSettings() {
+            const tbody = document.getElementById('table-outlets');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            appState.outlets.forEach(outlet => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition text-slate-700 dark:text-slate-300 group border-t border-slate-50 dark:border-slate-800/50">
+                        <td class="px-6 py-4 font-medium">${outlet}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button type="button" onclick="deleteOutlet('${outlet}')" class="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition flex items-center justify-center ml-auto opacity-0 group-hover:opacity-100 focus:opacity-100" title="Delete Outlet"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function addOutlet() {
+            const input = document.getElementById('newOutletInput');
+            const val = input.value.trim();
+            
+            if (!val) {
+                alert("Please enter a name first.");
+                return;
+            }
+            
+            if (appState.outlets.includes(val)) {
+                alert("This Restaurant/Outlet/Hotel already exists in the list.");
+                return;
+            }
+
+            appState.outlets.push(val);
+            saveState();
+            input.value = '';
+            renderSettings();
+            if(document.getElementById('page-dashboard').classList.contains('active')) renderCharts();
+        }
+
+        function deleteOutlet(outlet) {
+            if(confirm(`Delete "${outlet}"? \n\nNote: This will not remove existing tasks assigned to this Restaurant/Outlet/Hotel, but it will be removed from the dropdown list and charts.`)) {
+                appState.outlets = appState.outlets.filter(o => o !== outlet);
+                saveState();
+                renderSettings();
+                if(document.getElementById('page-dashboard').classList.contains('active')) renderCharts();
+            }
+        }
+
+        let calDate = new Date(currentDate);
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            
+            const month = calDate.getMonth();
+            const year = calDate.getFullYear();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calMonthYear').innerText = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let allTasks = [];
+            ['social', 'promotions', 'website', 'events'].forEach(type => {
+                appState[type].forEach(item => {
+                    if(item.dueDate) {
+                        let color = type === 'social' ? 'bg-blue-500' : type === 'promotions' ? 'bg-green-500' : type === 'website' ? 'bg-orange-500' : 'bg-purple-500';
+                        allTasks.push({ date: item.dueDate, title: item.title || item.promotion || item.task || item.event, color });
+                    }
+                });
+            });
+
+            for(let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="min-h-[120px] bg-slate-50/50 dark:bg-slate-900/30 p-2 border-r border-b border-slate-100 dark:border-slate-800"></div>`;
+            }
+            
+            for(let i = 1; i <= daysInMonth; i++) {
+                let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                let tasksForDay = allTasks.filter(t => t.date === dateStr);
+                
+                let isToday = dateStr === currentDate.toISOString().split('T')[0];
+                let todayClass = isToday ? 'bg-gold-50 dark:bg-gold-500/10' : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition';
+                let numClass = isToday ? 'bg-gold-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold shadow-md shadow-gold-500/30' : 'text-slate-500 font-semibold p-1';
+                
+                let html = `<div class="min-h-[120px] ${todayClass} p-3 border-r border-b border-slate-100 dark:border-slate-800 flex flex-col">
+                    <div class="flex justify-end mb-2 text-sm"><span class="${numClass}">${i}</span></div>
+                    <div class="space-y-1.5 flex-1 overflow-y-auto custom-scrollbar">`;
+                
+                tasksForDay.forEach(t => {
+                    html += `<div class="text-[11px] font-medium leading-tight px-2 py-1.5 rounded-md text-white ${t.color} truncate cursor-pointer shadow-sm hover:opacity-90 transition" title="${t.title}">${t.title}</div>`;
+                });
+                
+                html += `</div></div>`;
+                grid.innerHTML += html;
+            }
+        }
+
+        function changeMonth(delta) {
+            calDate.setMonth(calDate.getMonth() + delta);
+            renderCalendar();
+        }
+    </script>
+</body>
+</html>
